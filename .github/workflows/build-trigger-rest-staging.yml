@@ -1,0 +1,42 @@
+on:
+  push:
+    branches: [release/**, hotfix/**]
+
+name: Deploy "Dashboard MA/PRO/Specialist" to Staging Environment
+
+jobs:
+  deploy:
+    name: Deploy "Dashboard MA/PRO/Specialist" to Staging Environment
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create .env
+        uses: SpicyPizza/create-envfile@v1
+        with:
+          envkey_REACT_APP_TAILWIND_PURGE: false
+          envkey_REACT_APP_BASE_ALTEACARE_API: https://staging-services.alteacare.com
+          envkey_REACT_APP_BASE_ALTEACARE_SOCKET: https://staging-socket.alteacare.com
+          envkey_REACT_APP_REDUX_KEY: altea-redux
+          envkey_port: 8888
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          alias-domains: staging-dashboard.alteacare.com
+          working-directory: ./
+          scope: ${{ secrets.TEAM_ID }}
+          github-comment: false
+
+      - name: Slack Notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: 'deployment-information'
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_USERNAME: 'AlteaCare Bot'
+          SLACK_ICON: 'https://alteacare-assets.s3.ap-southeast-1.amazonaws.com/images/logo_48x48.png'
+          SLACK_FOOTER: 'AlteaCare Deployment Information'
